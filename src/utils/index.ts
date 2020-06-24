@@ -68,8 +68,8 @@ export const generateCells = (): Cell[][] => {
                 return cell;
                 })
             );
+            bombsPlaced++;
         }
-        bombsPlaced++;
     }
 
     // calculate numbers for each cell

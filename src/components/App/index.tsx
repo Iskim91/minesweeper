@@ -7,6 +7,7 @@ import {generateCells, openMultipleCells} from '../../utils';
 import {Cell, Face, CellState, CellValue} from '../../types';
 
 import "./App.scss";
+import { MAX_ROWS, MAX_COLS } from '../../constants';
 
 const App: React.FC = () => {
     const [cells, setCells] = useState<Cell[][]>(generateCells());
@@ -14,6 +15,8 @@ const App: React.FC = () => {
     const [time, setTime] = useState<number>(0);
     const [live, setLive] = useState<boolean>(false);
     const [bombCounter, setBombCounter] = useState<number>(10);
+    const [lost, setLost] = useState<boolean>(false);
+    const [won, setWon] = useState<boolean>(false);
     
     
     useEffect(() => {
@@ -43,13 +46,42 @@ const App: React.FC = () => {
         }
     }, [live, time])
 
+    useEffect(() => {
+        if (lost === true) {
+            setFace(Face.lost);
+            setLive(false)
+        }
+    }, [lost])
+
+    useEffect(() => {
+        if (won) {
+            setLive(false);
+            setFace(Face.won)
+        }
+    }, [won])
+
+    const showAllBombs = (): Cell[][] => {
+        const currentCells = cells.slice();
+        return currentCells.map(row => 
+            row.map(cell => {
+                if (cell.value === CellValue.bomb ) {
+                    return {
+                        ...cell,
+                        state: CellState.visible
+                    };
+                };
+                return cell;
+            })
+        )
+    }
 
     const handleFaceClick = (): void => {
-        if (live) {
-            setLive(false);
-            setTime(0);
-            setCells(generateCells());
-        }
+        setLive(false);
+        setTime(0);
+        setCells(generateCells());
+        setLost(false);
+        setWon(false);
+        setBombCounter(10)
     }
 
     const handleCellClick = (rowParam: number, colParam: number) => (): void => {
@@ -65,14 +97,44 @@ const App: React.FC = () => {
             return;
         }
 
-        if (currentCell.value === CellValue.none) {
-            // TODO
-            newCells = openMultipleCells(cells, rowParam, colParam)
+        if (currentCell.value === CellValue.bomb) {
+            setLost(true);
+            newCells = showAllBombs();
+            newCells[rowParam][colParam].red = true;
             setCells(newCells);
+            return;
+        } else if (currentCell.value === CellValue.none) {
+            newCells = openMultipleCells(cells, rowParam, colParam)
         } else {
             newCells[rowParam][colParam].state = CellState.visible;
-            setCells(newCells)
         }
+
+        // Checks if you won
+        let safeCells = false;
+        for(let row=0; row < MAX_ROWS; row++) {
+            for(let col = 0; col < MAX_COLS; col++) {
+                const currentCell = newCells[row][col]
+
+                if (currentCell.value !== CellValue.bomb && currentCell.state === CellState.open) {
+                    safeCells = true;
+                    break
+                }
+            }
+        }
+
+        if(!safeCells) {
+            newCells = newCells.map(row => row.map(cell => {
+                if(cell.value === CellValue.bomb) {
+                    return {
+                        ...cell,
+                        state: CellState.flagged
+                    }
+                }
+                return cell;
+            }))
+            setWon(true);
+        }
+        setCells(newCells);
     }
 
     const handleCellContext = (rowParam: number, colParam: number) => (e: React.MouseEvent<HTMLDivElement, MouseEvent>): void => {
@@ -102,6 +164,7 @@ const App: React.FC = () => {
                 key={`${rowIndex}=${colIndex}`} 
                 row={rowIndex} 
                 col={colIndex} 
+                red={cell.red}
                 state={cell.state} 
                 value={cell.value}
                 onClick={handleCellClick} 

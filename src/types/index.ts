@@ -20,7 +20,8 @@ export enum CellState{
 // this one is not an enum
 export type Cell = {
     value: CellValue, 
-    state: CellState
+    state: CellState,
+    red?: boolean,
 }
 
 

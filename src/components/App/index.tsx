@@ -3,8 +3,8 @@ import React, {useEffect, useState} from 'react';
 import NumberDisplay from '../NumberDisplay';
 import Button from '../Button';
 
-import {generateCells} from '../../utils';
-import {Cell, Face, CellState} from '../../types';
+import {generateCells, openMultipleCells} from '../../utils';
+import {Cell, Face, CellState, CellValue} from '../../types';
 
 import "./App.scss";
 
@@ -56,6 +56,22 @@ const App: React.FC = () => {
         // starting the game
         if (!live) {
             setLive(true);
+        }
+
+        const currentCell = cells[rowParam][colParam];
+        let newCells = cells.slice();
+
+        if (currentCell.state === CellState.flagged || currentCell.state === CellState.visible) {
+            return;
+        }
+
+        if (currentCell.value === CellValue.none) {
+            // TODO
+            newCells = openMultipleCells(cells, rowParam, colParam)
+            setCells(newCells);
+        } else {
+            newCells[rowParam][colParam].state = CellState.visible;
+            setCells(newCells)
         }
     }
 
